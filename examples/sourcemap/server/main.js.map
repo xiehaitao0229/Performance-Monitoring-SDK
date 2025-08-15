@@ -1,0 +1,20 @@
+{
+  "version": 3,
+  "sources": [
+    "webpack://sourcemap-demo/./src/index.js"
+  ],
+  "names": [
+    "document",
+    "getElementById",
+    "addEventListener",
+    "console",
+    "log",
+    "index"
+  ],
+  "mappings": "AAGAA,SAASC,eAAe,gBAAgBC,iBAAiB,SAAS,KAFhEC,QAAQC,IAAIC",
+  "file": "main.js",
+  "sourcesContent": [
+    "function yideng() {\n  console.log(index);\n}\ndocument.getElementById('js-btn-error').addEventListener('click', () => {\n  //故意输出未赋值的变量\n  yideng();\n});\n"
+  ],
+  "sourceRoot": ""
+}

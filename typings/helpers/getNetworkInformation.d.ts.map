@@ -1,0 +1,1 @@
+{"version":3,"file":"getNetworkInformation.d.ts","sourceRoot":"","sources":["../../src/helpers/getNetworkInformation.ts"],"names":[],"mappings":"AACA,OAAO,EACL,uBAAuB,EACvB,yBAAyB,EAC1B,MAAM,kBAAkB,CAAC;AAE1B,eAAO,IAAI,EAAE,EAAE,uBAA8B,CAAC;AAC9C,eAAO,IAAI,EAAE,SAAQ,CAAC;AAEtB,eAAO,MAAM,qBAAqB,QAAO,yBAkBxC,CAAC"}

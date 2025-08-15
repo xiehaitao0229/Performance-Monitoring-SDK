@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      body {
+        background: yellowgreen;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" elementtiming="elPageTitle">Hello</div>
+    <input id="js-btn-error" type="button" value="测试错误" />
+    <input type="text" />
+    <script src="./performance/index.ts"></script>
+    <img id="js-img" src="" />
+    <script>
+      document.getElementById('app').addEventListener('click', () => {
+        alert('测试');
+      });
+    </script>
+    <script src="./error/demo1.js"></script>
+  </body>
+</html>

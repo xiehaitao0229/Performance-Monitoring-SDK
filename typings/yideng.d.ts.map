@@ -1,0 +1,1 @@
+{"version":3,"file":"yideng.d.ts","sourceRoot":"","sources":["../src/yideng.ts"],"names":[],"mappings":"AAiBA,OAAO,EAAe,cAAc,EAAE,MAAM,iBAAiB,CAAC;AAQ9D,MAAM,CAAC,OAAO,OAAO,MAAM;IACzB,OAAO,CAAC,CAAC,CAAW;IACpB,OAAO,CAAC,UAAU,CAAc;gBACpB,OAAO,GAAE,cAAmB;CAuDzC"}

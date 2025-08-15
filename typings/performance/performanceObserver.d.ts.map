@@ -1,0 +1,1 @@
+{"version":3,"file":"performanceObserver.d.ts","sourceRoot":"","sources":["../../src/performance/performanceObserver.ts"],"names":[],"mappings":"AAEA,OAAO,EAAE,wBAAwB,EAAE,MAAM,kBAAkB,CAAC;AAE5D;;GAEG;AACH,eAAO,MAAM,EAAE,cACF,wBAAwB,2BACV,GAAG,EAAE,KAAK,IAAI,KACtC,mBAAmB,GAAG,IAYxB,CAAC;AAEF,eAAO,MAAM,YAAY,aAAc,GAAG,SAKzC,CAAC"}
