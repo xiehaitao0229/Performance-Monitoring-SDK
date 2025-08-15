@@ -1486,7 +1486,7 @@ var disconnectPerfObserversHidden = exports.disconnectPerfObserversHidden = func
   // 记录最终 INP 值并断开连接
   if (_observeInstances.perfObservers[6]) {
     console.log('🎯 记录最终 INP 值');
-    var finalINP = getINPValue();
+    var finalINP = (0, _onINP.getINPValue)();
     if (finalINP.value > 0) {
       (0, _log.logMetric)(finalINP.value, "inpFinal", finalINP);
     }

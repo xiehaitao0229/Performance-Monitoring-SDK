@@ -11,7 +11,7 @@ import { onFCP } from './onFCP';
 import { onLCP } from './onLCP';
 import { onFID } from './onFID';
 import { onTTFB } from './onTTFB';
-import { onINP } from './onINP';
+import { onINP,getINPValue } from './onINP';
 
 /**
  * 初始化性能观察器
