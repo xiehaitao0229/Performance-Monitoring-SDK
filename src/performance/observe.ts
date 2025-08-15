@@ -6,9 +6,9 @@ import { perfObservers } from './observeInstances';
 import { po, poDisconnect } from './performanceObserver';
 import { onResourceTiming } from './onResourceTiming';
 import { onElementTiming } from './onElementTiming';
-import { onFp } from './onFp';
-import { onFcp } from './onFcp';
-import { onLcp } from './onLcp';
+import { onFP } from './onFP';
+import { onFCP} from './onFCP';
+import { onLCP } from './onLCP';
 import { onFID } from './onFID';
 
 
@@ -28,14 +28,14 @@ export const initPerformanceObserver = (): void => {
   console.log('⏰ 性能收集开始');
 
   // 监控首次绘制（First Paint）- 页面开始渲染的时间点
-  perfObservers[0] = po('paint', onFp);
-  perfObservers[1] = po('paint', onFcp);
+  perfObservers[0] = po('paint', onFP);
+  perfObservers[1] = po('paint', onFCP);
 
   // 监控首次输入延迟（First Input Delay）- 用户首次交互的响应时间
   perfObservers[2] = po('first-input', onFID);
 
   // 监控最大内容绘制（Largest Contentful Paint）- 页面主要内容加载完成时间
-  perfObservers[3] = po('largest-contentful-paint', onLcp);
+  perfObservers[3] = po('largest-contentful-paint', onLCP);
 
   // 收集页面全部资源性能数据（可选功能）
   if (config.isResourceTiming) {

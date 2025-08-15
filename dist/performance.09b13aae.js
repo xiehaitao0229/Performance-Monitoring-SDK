@@ -1067,16 +1067,16 @@ var onElementTiming = exports.onElementTiming = function onElementTiming(perform
     }
   });
 };
-},{"../data/log":"../src/data/log.ts"}],"../src/performance/onFp.ts":[function(require,module,exports) {
+},{"../data/log":"../src/data/log.ts"}],"../src/performance/onFP.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.onFp = void 0;
+exports.onFP = void 0;
 var _metrics = require("../data/metrics");
 var _log = require("../data/log");
-var onFp = exports.onFp = function onFp(performanceEntries) {
+var onFP = exports.onFP = function onFP(performanceEntries) {
   // 遍历所有绘制性能条目
   performanceEntries.forEach(function (entry) {
     if (entry.name === _metrics.fpEntryName) {
@@ -1086,13 +1086,13 @@ var onFp = exports.onFp = function onFp(performanceEntries) {
     }
   });
 };
-},{"../data/metrics":"../src/data/metrics.ts","../data/log":"../src/data/log.ts"}],"../src/performance/onTotalBlockingTime.ts":[function(require,module,exports) {
+},{"../data/metrics":"../src/data/metrics.ts","../data/log":"../src/data/log.ts"}],"../src/performance/onTBT.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.onTotalBlockingTime = void 0;
+exports.onTBT = void 0;
 var _metrics = require("../data/metrics");
 /**
  * 初始化总阻塞时间监控
@@ -1110,7 +1110,7 @@ var _metrics = require("../data/metrics");
  *
  * @param performanceEntries - 性能条目数组，包含长任务的详细信息
  */
-var onTotalBlockingTime = exports.onTotalBlockingTime = function onTotalBlockingTime(performanceEntries) {
+var onTBT = exports.onTBT = function onTBT(performanceEntries) {
   // 遍历所有性能条目，寻找长任务
   performanceEntries.forEach(function (entry) {
     // 从 FCP 到 TTI 获取长耗时任务
@@ -1130,19 +1130,19 @@ var onTotalBlockingTime = exports.onTotalBlockingTime = function onTotalBlocking
     }
   });
 };
-},{"../data/metrics":"../src/data/metrics.ts"}],"../src/performance/onFcp.ts":[function(require,module,exports) {
+},{"../data/metrics":"../src/data/metrics.ts"}],"../src/performance/onFCP.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.onFcp = void 0;
+exports.onFCP = void 0;
 var _metrics = require("../data/metrics");
 var _performanceObserver = require("./performanceObserver");
 var _observeInstances = require("./observeInstances");
-var _onTotalBlockingTime = require("./onTotalBlockingTime");
+var _onTBT = require("./onTBT");
 var _log = require("../data/log");
-var onFcp = exports.onFcp = function onFcp(performanceEntries) {
+var onFCP = exports.onFCP = function onFCP(performanceEntries) {
   // 遍历所有绘制性能条目
   performanceEntries.forEach(function (entry) {
     if (entry.name === _metrics.fcpEntryName) {
@@ -1152,19 +1152,19 @@ var onFcp = exports.onFcp = function onFcp(performanceEntries) {
       (0, _log.logMetric)(_metrics.fcp.value, 'fcp');
       // FCP 触发后，启动长任务监控
       // 长任务监控用于计算总阻塞时间（TBT），这是衡量页面交互性能的重要指标
-      _observeInstances.perfObservers[5] = (0, _performanceObserver.po)('longtask', _onTotalBlockingTime.onTotalBlockingTime);
+      _observeInstances.perfObservers[5] = (0, _performanceObserver.po)('longtask', _onTBT.onTBT);
       // 断开首次绘制观察器，因为 FP 和 FCP 已经获取到，不再需要继续监控
       (0, _performanceObserver.poDisconnect)(0);
     }
   });
 };
-},{"../data/metrics":"../src/data/metrics.ts","./performanceObserver":"../src/performance/performanceObserver.ts","./observeInstances":"../src/performance/observeInstances.ts","./onTotalBlockingTime":"../src/performance/onTotalBlockingTime.ts","../data/log":"../src/data/log.ts"}],"../src/performance/onLcp.ts":[function(require,module,exports) {
+},{"../data/metrics":"../src/data/metrics.ts","./performanceObserver":"../src/performance/performanceObserver.ts","./observeInstances":"../src/performance/observeInstances.ts","./onTBT":"../src/performance/onTBT.ts","../data/log":"../src/data/log.ts"}],"../src/performance/onLCP.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.onLcp = void 0;
+exports.onLCP = void 0;
 var _metrics = require("../data/metrics");
 /**
  * 初始化最大内容绘制监控
@@ -1176,7 +1176,7 @@ var _metrics = require("../data/metrics");
  *
  * @param performanceEntries - 性能条目数组，包含 LCP 事件的详细信息
  */
-var onLcp = exports.onLcp = function onLcp(performanceEntries) {
+var onLCP = exports.onLCP = function onLCP(performanceEntries) {
   // 获取最后一个 LCP 条目
   // 因为 LCP 可能在页面加载过程中多次更新，我们取最新的值
   var lastEntry = performanceEntries.pop();
@@ -1269,9 +1269,9 @@ var _observeInstances = require("./observeInstances");
 var _performanceObserver = require("./performanceObserver");
 var _onResourceTiming = require("./onResourceTiming");
 var _onElementTiming = require("./onElementTiming");
-var _onFp = require("./onFp");
-var _onFcp = require("./onFcp");
-var _onLcp = require("./onLcp");
+var _onFP = require("./onFP");
+var _onFCP = require("./onFCP");
+var _onLCP = require("./onLCP");
 var _onFID = require("./onFID");
 /**
  * 初始化性能观察器
@@ -1288,12 +1288,12 @@ var _onFID = require("./onFID");
 var initPerformanceObserver = exports.initPerformanceObserver = function initPerformanceObserver() {
   console.log('⏰ 性能收集开始');
   // 监控首次绘制（First Paint）- 页面开始渲染的时间点
-  _observeInstances.perfObservers[0] = (0, _performanceObserver.po)('paint', _onFp.onFp);
-  _observeInstances.perfObservers[1] = (0, _performanceObserver.po)('paint', _onFcp.onFcp);
+  _observeInstances.perfObservers[0] = (0, _performanceObserver.po)('paint', _onFP.onFP);
+  _observeInstances.perfObservers[1] = (0, _performanceObserver.po)('paint', _onFCP.onFCP);
   // 监控首次输入延迟（First Input Delay）- 用户首次交互的响应时间
   _observeInstances.perfObservers[2] = (0, _performanceObserver.po)('first-input', _onFID.onFID);
   // 监控最大内容绘制（Largest Contentful Paint）- 页面主要内容加载完成时间
-  _observeInstances.perfObservers[3] = (0, _performanceObserver.po)('largest-contentful-paint', _onLcp.onLcp);
+  _observeInstances.perfObservers[3] = (0, _performanceObserver.po)('largest-contentful-paint', _onLCP.onLCP);
   // 收集页面全部资源性能数据（可选功能）
   if (_config.config.isResourceTiming) {
     console.log('📚 收集页面性能数据');
@@ -1337,7 +1337,7 @@ var disconnectPerfObserversHidden = exports.disconnectPerfObserversHidden = func
     (0, _performanceObserver.poDisconnect)(4);
   }
 };
-},{"../config":"../src/config/index.ts","../data/log":"../src/data/log.ts","../data/metrics":"../src/data/metrics.ts","./onCumulativeLayoutShift":"../src/performance/onCumulativeLayoutShift.ts","./observeInstances":"../src/performance/observeInstances.ts","./performanceObserver":"../src/performance/performanceObserver.ts","./onResourceTiming":"../src/performance/onResourceTiming.ts","./onElementTiming":"../src/performance/onElementTiming.ts","./onFp":"../src/performance/onFp.ts","./onFcp":"../src/performance/onFcp.ts","./onLcp":"../src/performance/onLcp.ts","./onFID":"../src/performance/onFID.ts"}],"../src/tools/isSupported.ts":[function(require,module,exports) {
+},{"../config":"../src/config/index.ts","../data/log":"../src/data/log.ts","../data/metrics":"../src/data/metrics.ts","./onCumulativeLayoutShift":"../src/performance/onCumulativeLayoutShift.ts","./observeInstances":"../src/performance/observeInstances.ts","./performanceObserver":"../src/performance/performanceObserver.ts","./onResourceTiming":"../src/performance/onResourceTiming.ts","./onElementTiming":"../src/performance/onElementTiming.ts","./onFP":"../src/performance/onFP.ts","./onFCP":"../src/performance/onFCP.ts","./onLCP":"../src/performance/onLCP.ts","./onFID":"../src/performance/onFID.ts"}],"../src/tools/isSupported.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1783,7 +1783,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50681" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60845" + '/');
   ws.onmessage = function (event) {
     checkedAssets = {};
     assetsToAccept = [];

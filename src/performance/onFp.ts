@@ -2,7 +2,7 @@ import { IPerformanceEntry } from '../typings/types';
 import { fpEntryName } from '../data/metrics';
 import { logMetric } from '../data/log';
 
-export const onFp = (performanceEntries: IPerformanceEntry[]) => {
+export const onFP = (performanceEntries: IPerformanceEntry[]) => {
   // 遍历所有绘制性能条目
   performanceEntries.forEach((entry) => {
     if (entry.name === fpEntryName) {

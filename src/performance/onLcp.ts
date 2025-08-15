@@ -11,7 +11,7 @@ import { lcp } from '../data/metrics';
  * 
  * @param performanceEntries - 性能条目数组，包含 LCP 事件的详细信息
  */
-export const onLcp = (
+export const onLCP = (
     performanceEntries: IPerformanceEntry[]
   ) => {
     // 获取最后一个 LCP 条目
