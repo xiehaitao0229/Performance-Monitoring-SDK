@@ -894,13 +894,13 @@ var tbt = exports.tbt = {
   /** TBT 指标值，默认为 0 */
   value: 0
 };
-},{}],"../src/performance/cumulativeLayoutShift.ts":[function(require,module,exports) {
+},{}],"../src/performance/onCumulativeLayoutShift.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.initLayoutShift = void 0;
+exports.onLayoutShift = void 0;
 var _metrics = require("../data/metrics");
 /**
  * 检测新的布局偏移事件并更新累积布局偏移分数
@@ -915,7 +915,7 @@ var _metrics = require("../data/metrics");
  *
  * @param performanceEntries - 性能条目数组，包含布局偏移事件的详细信息
  */
-var initLayoutShift = exports.initLayoutShift = function initLayoutShift(performanceEntries) {
+var onLayoutShift = exports.onLayoutShift = function onLayoutShift(performanceEntries) {
   // 获取最后一个布局偏移条目
   // 因为布局偏移观察器可能触发多次，我们处理最新的偏移事件
   var lastEntry = performanceEntries.pop();
@@ -995,13 +995,205 @@ var poDisconnect = exports.poDisconnect = function poDisconnect(observer) {
   // 从观察器实例集合中删除该观察器，释放内存
   delete _observeInstances.perfObservers[observer];
 };
-},{"../data/constants":"../src/data/constants.ts","./observeInstances":"../src/performance/observeInstances.ts"}],"../src/performance/firstInput.ts":[function(require,module,exports) {
+},{"../data/constants":"../src/data/constants.ts","./observeInstances":"../src/performance/observeInstances.ts"}],"../src/performance/onResourceTiming.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.initFirstInputDelay = void 0;
+exports.onResourceTiming = void 0;
+var _config = require("../config");
+var _log = require("../data/log");
+var _metrics = require("../data/metrics");
+/**
+ * 初始化资源时间监控
+ *
+ * 该函数用于监控和分析页面中各种资源的加载性能，包括：
+ * 1. 记录资源加载的详细时间信息（如果启用）
+ * 2. 统计不同类型资源的体积大小
+ * 3. 累积计算总资源消耗
+ *
+ * 支持的资源类型包括：script、css、img、fetch、xmlhttprequest 等
+ *
+ * @param performanceEntries - 性能条目数组，包含各种资源加载的详细信息
+ */
+var onResourceTiming = exports.onResourceTiming = function onResourceTiming(performanceEntries) {
+  // 遍历所有资源性能条目
+  performanceEntries.forEach(function (entry) {
+    // 如果配置中启用了资源时间监控，则记录详细的资源时间信息
+    if (_config.config.isResourceTiming) {
+      (0, _log.logData)('resourceTiming', entry);
+    }
+    // 检查条目是否包含有效的体积信息和发起者类型
+    // decodedBodySize: 解码后的资源体积（字节）
+    // initiatorType: 资源发起者类型（如 script、css、img 等）
+    if (entry.decodedBodySize && entry.initiatorType) {
+      // 将字节转换为 KB，提高可读性
+      var bodySize = entry.decodedBodySize / 1000;
+      // 累加到对应资源类型的体积统计中
+      // 例如：如果是 script 资源，则累加到 rt.value.script
+      _metrics.rt.value[entry.initiatorType] += bodySize;
+      // 同时累加到总体积统计中
+      _metrics.rt.value.total += bodySize;
+    }
+  });
+};
+},{"../config":"../src/config/index.ts","../data/log":"../src/data/log.ts","../data/metrics":"../src/data/metrics.ts"}],"../src/performance/onElementTiming.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.onElementTiming = void 0;
+var _log = require("../data/log");
+/**
+ * 初始化元素时间监控
+ *
+ * 该函数监控页面中特定元素的性能指标，
+ * 需要在 HTML 元素上添加 elementtiming 属性来启用监控。
+ *
+ * 使用场景：监控关键元素的加载和渲染性能
+ *
+ * @param performanceEntries - 性能条目数组，包含元素时间事件的详细信息
+ */
+var onElementTiming = exports.onElementTiming = function onElementTiming(performanceEntries) {
+  // 遍历所有元素时间性能条目
+  performanceEntries.forEach(function (entry) {
+    if (entry.identifier) {
+      // 记录特定元素的性能指标
+      // identifier 是在 HTML 元素上设置的 elementtiming 属性值
+      // 用于标识和区分不同的监控元素
+      (0, _log.logMetric)(entry.startTime, entry.identifier);
+    }
+  });
+};
+},{"../data/log":"../src/data/log.ts"}],"../src/performance/onFp.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.onFp = void 0;
+var _metrics = require("../data/metrics");
+var _log = require("../data/log");
+var onFp = exports.onFp = function onFp(performanceEntries) {
+  // 遍历所有绘制性能条目
+  performanceEntries.forEach(function (entry) {
+    if (entry.name === _metrics.fpEntryName) {
+      // 记录首次绘制（FP）时间
+      // FP 表示页面开始渲染的第一个像素点
+      (0, _log.logMetric)(entry.startTime, 'fp');
+    }
+  });
+};
+},{"../data/metrics":"../src/data/metrics.ts","../data/log":"../src/data/log.ts"}],"../src/performance/onTotalBlockingTime.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.onTotalBlockingTime = void 0;
+var _metrics = require("../data/metrics");
+/**
+ * 初始化总阻塞时间监控
+ *
+ * 该函数用于计算页面的总阻塞时间（Total Blocking Time, TBT），
+ * TBT 是衡量页面交互性能的重要指标，表示主线程被阻塞的总时间。
+ *
+ * 计算逻辑：
+ * 1. 只统计 FCP（首次内容绘制）之后的长任务
+ * 2. 只统计来自渲染帧的长任务（name === 'self'）
+ * 3. 长任务是指执行时间超过 50ms 的任务
+ * 4. 阻塞时间 = 任务持续时间 - 50ms（50ms 是长任务的阈值）
+ *
+ * 相关文档：https://developer.mozilla.org/zh-CN/docs/Web/API/Long_Tasks_API
+ *
+ * @param performanceEntries - 性能条目数组，包含长任务的详细信息
+ */
+var onTotalBlockingTime = exports.onTotalBlockingTime = function onTotalBlockingTime(performanceEntries) {
+  // 遍历所有性能条目，寻找长任务
+  performanceEntries.forEach(function (entry) {
+    // 从 FCP 到 TTI 获取长耗时任务
+    // 只统计 name === 'self' 的任务，表示耗时长任务来自于渲染帧
+    // 只统计 FCP 之后的任务，因为 FCP 之前的阻塞不影响用户交互
+    if (entry.name !== 'self' || entry.startTime < _metrics.fcp.value) {
+      return;
+    }
+    // 长耗时任务意味着执行时间超过 50ms 的任务
+    // 50ms 是长任务的阈值，超过这个时间的任务被认为会阻塞主线程
+    // 参考文档：https://developer.mozilla.org/zh-CN/docs/Web/API/Long_Tasks_API
+    var blockingTime = entry.duration - 50;
+    // 只有当阻塞时间大于 0 时才累加到总阻塞时间中
+    // 如果任务持续时间小于等于 50ms，则不会产生阻塞时间
+    if (blockingTime > 0) {
+      _metrics.tbt.value += blockingTime;
+    }
+  });
+};
+},{"../data/metrics":"../src/data/metrics.ts"}],"../src/performance/onFcp.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.onFcp = void 0;
+var _metrics = require("../data/metrics");
+var _performanceObserver = require("./performanceObserver");
+var _observeInstances = require("./observeInstances");
+var _onTotalBlockingTime = require("./onTotalBlockingTime");
+var _log = require("../data/log");
+var onFcp = exports.onFcp = function onFcp(performanceEntries) {
+  // 遍历所有绘制性能条目
+  performanceEntries.forEach(function (entry) {
+    if (entry.name === _metrics.fcpEntryName) {
+      // 记录首次内容绘制（FCP）时间
+      // FCP 表示页面首次显示有意义内容的时间点
+      _metrics.fcp.value = entry.startTime;
+      (0, _log.logMetric)(_metrics.fcp.value, 'fcp');
+      // FCP 触发后，启动长任务监控
+      // 长任务监控用于计算总阻塞时间（TBT），这是衡量页面交互性能的重要指标
+      _observeInstances.perfObservers[5] = (0, _performanceObserver.po)('longtask', _onTotalBlockingTime.onTotalBlockingTime);
+      // 断开首次绘制观察器，因为 FP 和 FCP 已经获取到，不再需要继续监控
+      (0, _performanceObserver.poDisconnect)(0);
+    }
+  });
+};
+},{"../data/metrics":"../src/data/metrics.ts","./performanceObserver":"../src/performance/performanceObserver.ts","./observeInstances":"../src/performance/observeInstances.ts","./onTotalBlockingTime":"../src/performance/onTotalBlockingTime.ts","../data/log":"../src/data/log.ts"}],"../src/performance/onLcp.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.onLcp = void 0;
+var _metrics = require("../data/metrics");
+/**
+ * 初始化最大内容绘制监控
+ *
+ * 该函数监控页面的最大内容绘制（LCP）指标，
+ * LCP 是 Core Web Vitals 的重要指标，表示页面主要内容加载完成的时间。
+ *
+ * 注意：LCP 观察器会持续监控，直到页面隐藏或用户交互
+ *
+ * @param performanceEntries - 性能条目数组，包含 LCP 事件的详细信息
+ */
+var onLcp = exports.onLcp = function onLcp(performanceEntries) {
+  // 获取最后一个 LCP 条目
+  // 因为 LCP 可能在页面加载过程中多次更新，我们取最新的值
+  var lastEntry = performanceEntries.pop();
+  if (lastEntry) {
+    // 使用 renderTime 或 loadTime 作为 LCP 值
+    // renderTime: 元素渲染完成的时间
+    // loadTime: 元素加载完成的时间
+    _metrics.lcp.value = lastEntry.renderTime || lastEntry.loadTime;
+  }
+};
+},{"../data/metrics":"../src/data/metrics.ts"}],"../src/performance/onFID.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.onFID = void 0;
 var _log = require("../data/log");
 var _metrics = require("../data/metrics");
 var _observeInstances = require("./observeInstances");
@@ -1017,7 +1209,7 @@ var _performanceObserver = require("./performanceObserver");
  *
  * @param performanceEntries - 性能事件时间数组，包含输入事件的详细信息
  */
-var initFirstInputDelay = exports.initFirstInputDelay = function initFirstInputDelay(performanceEntries) {
+var onFID = exports.onFID = function onFID(performanceEntries) {
   // 取最后一位即为我们希望所获取的时间点
   // 因为 FID 观察器可能触发多次，我们只需要最后一次的输入事件
   var lastEntry = performanceEntries.pop();
@@ -1062,179 +1254,7 @@ var initFirstInputDelay = exports.initFirstInputDelay = function initFirstInputD
     (0, _log.logData)('dataConsumption', _metrics.rt.value);
   }, 10000);
 };
-},{"../data/log":"../src/data/log.ts","../data/metrics":"../src/data/metrics.ts","./observeInstances":"../src/performance/observeInstances.ts","./performanceObserver":"../src/performance/performanceObserver.ts"}],"../src/performance/totalBlockingTime.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.initTotalBlockingTime = void 0;
-var _metrics = require("../data/metrics");
-/**
- * 初始化总阻塞时间监控
- *
- * 该函数用于计算页面的总阻塞时间（Total Blocking Time, TBT），
- * TBT 是衡量页面交互性能的重要指标，表示主线程被阻塞的总时间。
- *
- * 计算逻辑：
- * 1. 只统计 FCP（首次内容绘制）之后的长任务
- * 2. 只统计来自渲染帧的长任务（name === 'self'）
- * 3. 长任务是指执行时间超过 50ms 的任务
- * 4. 阻塞时间 = 任务持续时间 - 50ms（50ms 是长任务的阈值）
- *
- * 相关文档：https://developer.mozilla.org/zh-CN/docs/Web/API/Long_Tasks_API
- *
- * @param performanceEntries - 性能条目数组，包含长任务的详细信息
- */
-var initTotalBlockingTime = exports.initTotalBlockingTime = function initTotalBlockingTime(performanceEntries) {
-  // 遍历所有性能条目，寻找长任务
-  performanceEntries.forEach(function (entry) {
-    // 从 FCP 到 TTI 获取长耗时任务
-    // 只统计 name === 'self' 的任务，表示耗时长任务来自于渲染帧
-    // 只统计 FCP 之后的任务，因为 FCP 之前的阻塞不影响用户交互
-    if (entry.name !== 'self' || entry.startTime < _metrics.fcp.value) {
-      return;
-    }
-    // 长耗时任务意味着执行时间超过 50ms 的任务
-    // 50ms 是长任务的阈值，超过这个时间的任务被认为会阻塞主线程
-    // 参考文档：https://developer.mozilla.org/zh-CN/docs/Web/API/Long_Tasks_API
-    var blockingTime = entry.duration - 50;
-    // 只有当阻塞时间大于 0 时才累加到总阻塞时间中
-    // 如果任务持续时间小于等于 50ms，则不会产生阻塞时间
-    if (blockingTime > 0) {
-      _metrics.tbt.value += blockingTime;
-    }
-  });
-};
-},{"../data/metrics":"../src/data/metrics.ts"}],"../src/performance/paint.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.initLargestContentfulPaint = exports.initFirstPaint = exports.initElementTiming = void 0;
-var _metrics = require("../data/metrics");
-var _performanceObserver = require("./performanceObserver");
-var _observeInstances = require("./observeInstances");
-var _totalBlockingTime = require("./totalBlockingTime");
-var _log = require("../data/log");
-/**
- * 初始化首次绘制监控
- *
- * 该函数监控页面的绘制性能，包括：
- * 1. First Paint (FP) - 首次绘制时间
- * 2. First Contentful Paint (FCP) - 首次内容绘制时间
- *
- * 当 FCP 触发后，会启动长任务监控来计算总阻塞时间（TBT）
- *
- * @param performanceEntries - 性能条目数组，包含绘制事件的详细信息
- */
-var initFirstPaint = exports.initFirstPaint = function initFirstPaint(performanceEntries) {
-  // 遍历所有绘制性能条目
-  performanceEntries.forEach(function (entry) {
-    if (entry.name === _metrics.fpEntryName) {
-      // 记录首次绘制（FP）时间
-      // FP 表示页面开始渲染的第一个像素点
-      (0, _log.logMetric)(entry.startTime, 'fp');
-    } else if (entry.name === _metrics.fcpEntryName) {
-      // 记录首次内容绘制（FCP）时间
-      // FCP 表示页面首次显示有意义内容的时间点
-      _metrics.fcp.value = entry.startTime;
-      (0, _log.logMetric)(_metrics.fcp.value, 'fcp');
-      // FCP 触发后，启动长任务监控
-      // 长任务监控用于计算总阻塞时间（TBT），这是衡量页面交互性能的重要指标
-      _observeInstances.perfObservers[4] = (0, _performanceObserver.po)('longtask', _totalBlockingTime.initTotalBlockingTime);
-      // 断开首次绘制观察器，因为 FP 和 FCP 已经获取到，不再需要继续监控
-      (0, _performanceObserver.poDisconnect)(0);
-    }
-  });
-};
-/**
- * 初始化最大内容绘制监控
- *
- * 该函数监控页面的最大内容绘制（LCP）指标，
- * LCP 是 Core Web Vitals 的重要指标，表示页面主要内容加载完成的时间。
- *
- * 注意：LCP 观察器会持续监控，直到页面隐藏或用户交互
- *
- * @param performanceEntries - 性能条目数组，包含 LCP 事件的详细信息
- */
-var initLargestContentfulPaint = exports.initLargestContentfulPaint = function initLargestContentfulPaint(performanceEntries) {
-  // 获取最后一个 LCP 条目
-  // 因为 LCP 可能在页面加载过程中多次更新，我们取最新的值
-  var lastEntry = performanceEntries.pop();
-  if (lastEntry) {
-    // 使用 renderTime 或 loadTime 作为 LCP 值
-    // renderTime: 元素渲染完成的时间
-    // loadTime: 元素加载完成的时间
-    _metrics.lcp.value = lastEntry.renderTime || lastEntry.loadTime;
-  }
-};
-/**
- * 初始化元素时间监控
- *
- * 该函数监控页面中特定元素的性能指标，
- * 需要在 HTML 元素上添加 elementtiming 属性来启用监控。
- *
- * 使用场景：监控关键元素的加载和渲染性能
- *
- * @param performanceEntries - 性能条目数组，包含元素时间事件的详细信息
- */
-var initElementTiming = exports.initElementTiming = function initElementTiming(performanceEntries) {
-  // 遍历所有元素时间性能条目
-  performanceEntries.forEach(function (entry) {
-    if (entry.identifier) {
-      // 记录特定元素的性能指标
-      // identifier 是在 HTML 元素上设置的 elementtiming 属性值
-      // 用于标识和区分不同的监控元素
-      (0, _log.logMetric)(entry.startTime, entry.identifier);
-    }
-  });
-};
-},{"../data/metrics":"../src/data/metrics.ts","./performanceObserver":"../src/performance/performanceObserver.ts","./observeInstances":"../src/performance/observeInstances.ts","./totalBlockingTime":"../src/performance/totalBlockingTime.ts","../data/log":"../src/data/log.ts"}],"../src/performance/resourceTiming.ts":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.initResourceTiming = void 0;
-var _config = require("../config");
-var _log = require("../data/log");
-var _metrics = require("../data/metrics");
-/**
- * 初始化资源时间监控
- *
- * 该函数用于监控和分析页面中各种资源的加载性能，包括：
- * 1. 记录资源加载的详细时间信息（如果启用）
- * 2. 统计不同类型资源的体积大小
- * 3. 累积计算总资源消耗
- *
- * 支持的资源类型包括：script、css、img、fetch、xmlhttprequest 等
- *
- * @param performanceEntries - 性能条目数组，包含各种资源加载的详细信息
- */
-var initResourceTiming = exports.initResourceTiming = function initResourceTiming(performanceEntries) {
-  // 遍历所有资源性能条目
-  performanceEntries.forEach(function (entry) {
-    // 如果配置中启用了资源时间监控，则记录详细的资源时间信息
-    if (_config.config.isResourceTiming) {
-      (0, _log.logData)('resourceTiming', entry);
-    }
-    // 检查条目是否包含有效的体积信息和发起者类型
-    // decodedBodySize: 解码后的资源体积（字节）
-    // initiatorType: 资源发起者类型（如 script、css、img 等）
-    if (entry.decodedBodySize && entry.initiatorType) {
-      // 将字节转换为 KB，提高可读性
-      var bodySize = entry.decodedBodySize / 1000;
-      // 累加到对应资源类型的体积统计中
-      // 例如：如果是 script 资源，则累加到 rt.value.script
-      _metrics.rt.value[entry.initiatorType] += bodySize;
-      // 同时累加到总体积统计中
-      _metrics.rt.value.total += bodySize;
-    }
-  });
-};
-},{"../config":"../src/config/index.ts","../data/log":"../src/data/log.ts","../data/metrics":"../src/data/metrics.ts"}],"../src/performance/observe.ts":[function(require,module,exports) {
+},{"../data/log":"../src/data/log.ts","../data/metrics":"../src/data/metrics.ts","./observeInstances":"../src/performance/observeInstances.ts","./performanceObserver":"../src/performance/performanceObserver.ts"}],"../src/performance/observe.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1244,12 +1264,15 @@ exports.initPerformanceObserver = exports.disconnectPerfObserversHidden = void 0
 var _config = require("../config");
 var _log = require("../data/log");
 var _metrics = require("../data/metrics");
-var _cumulativeLayoutShift = require("./cumulativeLayoutShift");
-var _firstInput = require("./firstInput");
+var _onCumulativeLayoutShift = require("./onCumulativeLayoutShift");
 var _observeInstances = require("./observeInstances");
-var _paint = require("./paint");
 var _performanceObserver = require("./performanceObserver");
-var _resourceTiming = require("./resourceTiming");
+var _onResourceTiming = require("./onResourceTiming");
+var _onElementTiming = require("./onElementTiming");
+var _onFp = require("./onFp");
+var _onFcp = require("./onFcp");
+var _onLcp = require("./onLcp");
+var _onFID = require("./onFID");
 /**
  * 初始化性能观察器
  *
@@ -1265,21 +1288,22 @@ var _resourceTiming = require("./resourceTiming");
 var initPerformanceObserver = exports.initPerformanceObserver = function initPerformanceObserver() {
   console.log('⏰ 性能收集开始');
   // 监控首次绘制（First Paint）- 页面开始渲染的时间点
-  _observeInstances.perfObservers[0] = (0, _performanceObserver.po)('paint', _paint.initFirstPaint);
+  _observeInstances.perfObservers[0] = (0, _performanceObserver.po)('paint', _onFp.onFp);
+  _observeInstances.perfObservers[1] = (0, _performanceObserver.po)('paint', _onFcp.onFcp);
   // 监控首次输入延迟（First Input Delay）- 用户首次交互的响应时间
-  _observeInstances.perfObservers[1] = (0, _performanceObserver.po)('first-input', _firstInput.initFirstInputDelay);
+  _observeInstances.perfObservers[2] = (0, _performanceObserver.po)('first-input', _onFID.onFID);
   // 监控最大内容绘制（Largest Contentful Paint）- 页面主要内容加载完成时间
-  _observeInstances.perfObservers[2] = (0, _performanceObserver.po)('largest-contentful-paint', _paint.initLargestContentfulPaint);
+  _observeInstances.perfObservers[3] = (0, _performanceObserver.po)('largest-contentful-paint', _onLcp.onLcp);
   // 收集页面全部资源性能数据（可选功能）
   if (_config.config.isResourceTiming) {
     console.log('📚 收集页面性能数据');
-    (0, _performanceObserver.po)('resource', _resourceTiming.initResourceTiming);
+    (0, _performanceObserver.po)('resource', _onResourceTiming.onResourceTiming);
   }
   // 监控布局偏移（Layout Shift）- 页面视觉稳定性指标
-  _observeInstances.perfObservers[3] = (0, _performanceObserver.po)('layout-shift', _cumulativeLayoutShift.initLayoutShift);
+  _observeInstances.perfObservers[4] = (0, _performanceObserver.po)('layout-shift', _onCumulativeLayoutShift.onLayoutShift);
   // 监控元素时间指标（可选功能）
   if (_config.config.isElementTiming) {
-    (0, _performanceObserver.po)('element', _paint.initElementTiming);
+    (0, _performanceObserver.po)('element', _onElementTiming.onElementTiming);
   }
 };
 /**
@@ -1313,7 +1337,7 @@ var disconnectPerfObserversHidden = exports.disconnectPerfObserversHidden = func
     (0, _performanceObserver.poDisconnect)(4);
   }
 };
-},{"../config":"../src/config/index.ts","../data/log":"../src/data/log.ts","../data/metrics":"../src/data/metrics.ts","./cumulativeLayoutShift":"../src/performance/cumulativeLayoutShift.ts","./firstInput":"../src/performance/firstInput.ts","./observeInstances":"../src/performance/observeInstances.ts","./paint":"../src/performance/paint.ts","./performanceObserver":"../src/performance/performanceObserver.ts","./resourceTiming":"../src/performance/resourceTiming.ts"}],"../src/tools/isSupported.ts":[function(require,module,exports) {
+},{"../config":"../src/config/index.ts","../data/log":"../src/data/log.ts","../data/metrics":"../src/data/metrics.ts","./onCumulativeLayoutShift":"../src/performance/onCumulativeLayoutShift.ts","./observeInstances":"../src/performance/observeInstances.ts","./performanceObserver":"../src/performance/performanceObserver.ts","./onResourceTiming":"../src/performance/onResourceTiming.ts","./onElementTiming":"../src/performance/onElementTiming.ts","./onFp":"../src/performance/onFp.ts","./onFcp":"../src/performance/onFcp.ts","./onLcp":"../src/performance/onLcp.ts","./onFID":"../src/performance/onFID.ts"}],"../src/tools/isSupported.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {

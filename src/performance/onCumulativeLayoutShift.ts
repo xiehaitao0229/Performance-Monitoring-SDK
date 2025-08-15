@@ -14,7 +14,7 @@ import { IPerformanceEntry } from '../typings/types';
  * 
  * @param performanceEntries - 性能条目数组，包含布局偏移事件的详细信息
  */
-export const initLayoutShift = (performanceEntries: IPerformanceEntry[]) => {
+export const onLayoutShift = (performanceEntries: IPerformanceEntry[]) => {
   // 获取最后一个布局偏移条目
   // 因为布局偏移观察器可能触发多次，我们处理最新的偏移事件
   const lastEntry = performanceEntries.pop();

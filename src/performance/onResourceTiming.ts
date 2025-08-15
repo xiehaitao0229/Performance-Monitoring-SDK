@@ -15,7 +15,7 @@ import { IPerformanceEntry } from '../typings/types';
  * 
  * @param performanceEntries - 性能条目数组，包含各种资源加载的详细信息
  */
-export const initResourceTiming = (performanceEntries: IPerformanceEntry[]) => {
+export const onResourceTiming = (performanceEntries: IPerformanceEntry[]) => {
   // 遍历所有资源性能条目
   performanceEntries.forEach((entry) => {
     // 如果配置中启用了资源时间监控，则记录详细的资源时间信息

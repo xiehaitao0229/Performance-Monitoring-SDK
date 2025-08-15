@@ -15,7 +15,7 @@ import { PerformanceEventTiming } from '../typings/types';
  * 
  * @param performanceEntries - 性能事件时间数组，包含输入事件的详细信息
  */
-export const initFirstInputDelay = (
+export const onFID = (
   performanceEntries: PerformanceEventTiming[]
 ) => {
   // 取最后一位即为我们希望所获取的时间点

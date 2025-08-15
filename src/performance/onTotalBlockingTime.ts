@@ -17,7 +17,7 @@ import { IPerformanceEntry } from '../typings/types';
  * 
  * @param performanceEntries - 性能条目数组，包含长任务的详细信息
  */
-export const initTotalBlockingTime = (
+export const onTotalBlockingTime = (
   performanceEntries: IPerformanceEntry[]
 ): void => {
   // 遍历所有性能条目，寻找长任务

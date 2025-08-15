@@ -1,16 +1,16 @@
 import { config } from '../config';
 import { logMetric } from '../data/log';
 import { cls, lcp, tbt } from '../data/metrics';
-import { initLayoutShift } from './cumulativeLayoutShift';
-import { initFirstInputDelay } from './firstInput';
+import { onLayoutShift } from './onCumulativeLayoutShift';
 import { perfObservers } from './observeInstances';
-import {
-  initElementTiming,
-  initFirstPaint,
-  initLargestContentfulPaint,
-} from './paint';
 import { po, poDisconnect } from './performanceObserver';
-import { initResourceTiming } from './resourceTiming';
+import { onResourceTiming } from './onResourceTiming';
+import { onElementTiming } from './onElementTiming';
+import { onFp } from './onFp';
+import { onFcp } from './onFcp';
+import { onLcp } from './onLcp';
+import { onFID } from './onFID';
+
 
 /**
  * 初始化性能观察器
@@ -26,28 +26,29 @@ import { initResourceTiming } from './resourceTiming';
  */
 export const initPerformanceObserver = (): void => {
   console.log('⏰ 性能收集开始');
-  
+
   // 监控首次绘制（First Paint）- 页面开始渲染的时间点
-  perfObservers[0] = po('paint', initFirstPaint);
-  
+  perfObservers[0] = po('paint', onFp);
+  perfObservers[1] = po('paint', onFcp);
+
   // 监控首次输入延迟（First Input Delay）- 用户首次交互的响应时间
-  perfObservers[1] = po('first-input', initFirstInputDelay);
-  
+  perfObservers[2] = po('first-input', onFID);
+
   // 监控最大内容绘制（Largest Contentful Paint）- 页面主要内容加载完成时间
-  perfObservers[2] = po('largest-contentful-paint', initLargestContentfulPaint);
-  
+  perfObservers[3] = po('largest-contentful-paint', onLcp);
+
   // 收集页面全部资源性能数据（可选功能）
   if (config.isResourceTiming) {
     console.log('📚 收集页面性能数据');
-    po('resource', initResourceTiming);
+    po('resource', onResourceTiming);
   }
-  
+
   // 监控布局偏移（Layout Shift）- 页面视觉稳定性指标
-  perfObservers[3] = po('layout-shift', initLayoutShift);
-  
+  perfObservers[4] = po('layout-shift', onLayoutShift);
+
   // 监控元素时间指标（可选功能）
   if (config.isElementTiming) {
-    po('element', initElementTiming);
+    po('element', onElementTiming);
   }
 };
 
@@ -67,7 +68,7 @@ export const disconnectPerfObserversHidden = (): void => {
     logMetric(lcp.value, `lcpFinal`);
     poDisconnect(2);
   }
-  
+
   // 处理 CLS 观察器：获取最终记录并记录最终值
   if (perfObservers[3]) {
     // 如果观察器支持 takeRecords 方法，立即获取所有待处理的记录
@@ -77,7 +78,7 @@ export const disconnectPerfObserversHidden = (): void => {
     logMetric(cls.value, `clsFinal`);
     poDisconnect(3);
   }
-  
+
   // 处理 TBT 观察器：记录最终值并断开连接
   if (perfObservers[4]) {
     logMetric(tbt.value, `tbtFinal`);
