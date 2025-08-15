@@ -1306,7 +1306,110 @@ var onTTFB = exports.onTTFB = function onTTFB() {
     // 避免影响其他性能监控功能
   }
 };
-},{"../data/log":"../src/data/log.ts","../data/constants":"../src/data/constants.ts","../helpers/isSupported":"../src/helpers/isSupported.ts"}],"../src/performance/observe.ts":[function(require,module,exports) {
+},{"../data/log":"../src/data/log.ts","../data/constants":"../src/data/constants.ts","../helpers/isSupported":"../src/helpers/isSupported.ts"}],"../src/performance/onINP.ts":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.onINP = exports.getINPValue = void 0;
+var _log = require("../data/log");
+function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
+function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
+function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
+function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
+/**
+ * INP 交互延迟追踪
+ * 用于存储和计算页面的交互延迟指标
+ */
+var inpValue = 0;
+var maxInteractionDelay = 0;
+var interactionDelays = [];
+/**
+ * 初始化交互到下一次绘制监控
+ *
+ * 该函数用于监控页面的 INP（Interaction to Next Paint）指标，
+ * INP 是 Core Web Vitals 的重要指标，用于衡量页面对用户交互的响应性。
+ *
+ * 计算逻辑：
+ * 1. 监控所有用户交互事件（点击、键盘输入、触摸等）
+ * 2. 计算每个交互从开始到下一次绘制的延迟时间
+ * 3. 取所有交互延迟的第98百分位数作为 INP 值
+ *
+ * 相关文档：
+ * - INP 指标说明: https://web.dev/inp/
+ * - Event Timing API: https://developer.mozilla.org/en-US/docs/Web/API/PerformanceEventTiming
+ *
+ * @param performanceEntries - 性能事件时间数组，包含用户交互事件的详细信息
+ */
+var onINP = exports.onINP = function onINP(performanceEntries) {
+  // 遍历所有性能事件条目
+  performanceEntries.forEach(function (entry) {
+    // 只处理用户交互事件
+    // 包括：pointerdown、pointerup、click、keydown、keyup 等
+    if (!entry.interactionId) {
+      return;
+    }
+    // 计算交互延迟时间
+    // duration 包含了从事件开始到浏览器能够绘制下一帧的总时间
+    // 这是 INP 的核心指标：交互到下一次绘制的时间
+    var interactionDelay = entry.duration;
+    // 确保延迟时间有效
+    if (interactionDelay > 0) {
+      // 将交互延迟添加到数组中，用于后续计算百分位数
+      interactionDelays.push(interactionDelay);
+      // 更新最大交互延迟（用于简单场景的快速参考）
+      maxInteractionDelay = Math.max(maxInteractionDelay, interactionDelay);
+      // 计算 INP 值（第98百分位数）
+      // 根据 Web Vitals 规范，INP 取所有交互延迟的第98百分位数
+      inpValue = calculatePercentile(interactionDelays, 98);
+      // 记录当前的 INP 值
+      // 由于 INP 会随着用户交互持续更新，我们记录每次更新的值
+      (0, _log.logMetric)(inpValue, 'inp', {
+        performanceEntry: entry,
+        maxDelay: maxInteractionDelay,
+        totalInteractions: interactionDelays.length
+      });
+    }
+  });
+};
+/**
+ * 计算数组的指定百分位数
+ *
+ * @param values - 数值数组
+ * @param percentile - 百分位数（0-100）
+ * @returns 指定百分位数的值
+ */
+var calculatePercentile = function calculatePercentile(values, percentile) {
+  if (values.length === 0) {
+    return 0;
+  }
+  // 对数组进行排序
+  var sortedValues = _toConsumableArray(values).sort(function (a, b) {
+    return a - b;
+  });
+  // 计算百分位数的索引
+  var index = Math.ceil(percentile / 100 * sortedValues.length) - 1;
+  // 返回对应索引的值
+  return sortedValues[Math.max(0, index)] || 0;
+};
+/**
+ * 获取当前 INP 值
+ * 用于在页面卸载或其他需要最终 INP 值的场景中获取数据
+ *
+ * @returns 当前的 INP 值和相关统计信息
+ */
+var getINPValue = exports.getINPValue = function getINPValue() {
+  return {
+    value: inpValue,
+    maxDelay: maxInteractionDelay,
+    totalInteractions: interactionDelays.length,
+    allDelays: [].concat(interactionDelays)
+  };
+};
+},{"../data/log":"../src/data/log.ts"}],"../src/performance/observe.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1326,41 +1429,60 @@ var _onFCP = require("./onFCP");
 var _onLCP = require("./onLCP");
 var _onFID = require("./onFID");
 var _onTTFB = require("./onTTFB");
+var _onINP = require("./onINP");
 /**
  * 初始化性能观察器
  *
  * 该函数负责设置各种性能指标的监控，包括：
- * 1. 绘制相关指标（FP、LCP）
+ * 1. 绘制相关指标（FP、FCP、LCP）
  * 2. 用户交互指标（FID）
  * 3. 布局稳定性指标（CLS）
  * 4. 资源加载性能（可选）
  * 5. 元素时间指标（可选）
+ * 6. 网络性能指标（TTFB）
  *
  * 每个观察器都被存储在 perfObservers 数组中，便于后续管理和清理
+ * 观察器索引说明：
+ * - perfObservers[0]: FP 观察器
+ * - perfObservers[1]: FCP 观察器
+ * - perfObservers[2]: FID 观察器
+ * - perfObservers[3]: LCP 观察器
+ * - perfObservers[4]: CLS 观察器
  */
 var initPerformanceObserver = exports.initPerformanceObserver = function initPerformanceObserver() {
   console.log('⏰ 性能收集开始');
   // 立即计算并记录 TTFB（首字节时间）
   // TTFB 不需要观察器，直接使用 Navigation Timing API 计算
+  // 这是衡量服务器响应速度的重要指标
   (0, _onTTFB.onTTFB)();
   // 监控首次绘制（First Paint）- 页面开始渲染的时间点
+  // FP 表示页面开始渲染的第一个像素点，是页面渲染的起点
   _observeInstances.perfObservers[0] = (0, _performanceObserver.po)('paint', _onFP.onFP);
+  // 监控首次内容绘制（First Contentful Paint）- 页面首次显示有意义内容的时间点
+  // FCP 表示页面首次显示有意义内容，是用户体验的重要指标
   _observeInstances.perfObservers[1] = (0, _performanceObserver.po)('paint', _onFCP.onFCP);
   // 监控首次输入延迟（First Input Delay）- 用户首次交互的响应时间
+  // FID 衡量页面响应性，值越小表示页面越流畅
   _observeInstances.perfObservers[2] = (0, _performanceObserver.po)('first-input', _onFID.onFID);
   // 监控最大内容绘制（Largest Contentful Paint）- 页面主要内容加载完成时间
+  // LCP 是 Core Web Vitals 的核心指标，表示页面主要内容可见的时间
   _observeInstances.perfObservers[3] = (0, _performanceObserver.po)('largest-contentful-paint', _onLCP.onLCP);
   // 收集页面全部资源性能数据（可选功能）
+  // 监控各种资源（JS、CSS、图片等）的加载性能
   if (_config.config.isResourceTiming) {
-    console.log('📚 收集页面性能数据');
+    console.log('�� 收集页面性能数据');
     (0, _performanceObserver.po)('resource', _onResourceTiming.onResourceTiming);
   }
   // 监控布局偏移（Layout Shift）- 页面视觉稳定性指标
+  // CLS 衡量页面布局的稳定性，值越小表示页面越稳定
   _observeInstances.perfObservers[4] = (0, _performanceObserver.po)('layout-shift', _onCumulativeLayoutShift.onLayoutShift);
   // 监控元素时间指标（可选功能）
+  // 需要在 HTML 元素上添加 elementtiming 属性来启用监控
   if (_config.config.isElementTiming) {
     (0, _performanceObserver.po)('element', _onElementTiming.onElementTiming);
   }
+  // 监控交互到下一次绘制（Interaction to Next Paint）- 页面交互响应性指标
+  _observeInstances.perfObservers[6] = (0, _performanceObserver.po)('event', _onINP.onINP);
 };
 /**
  * 页面隐藏时断开性能观察器连接
@@ -1369,18 +1491,23 @@ var initPerformanceObserver = exports.initPerformanceObserver = function initPer
  * 1. 记录最终的 LCP 值并断开观察器
  * 2. 获取 CLS 观察器的最终记录并记录最终值
  * 3. 记录最终的 TBT 值并断开观察器
+ * 4. 记录最终的 INP 值并断开观察器（已注释）
  *
  * 这样可以避免在页面不可见时继续收集性能数据，节省资源
+ * 同时确保获取到完整的性能数据记录
  */
 var disconnectPerfObserversHidden = exports.disconnectPerfObserversHidden = function disconnectPerfObserversHidden() {
   // 处理 LCP 观察器：记录最终值并断开连接
+  // LCP 观察器在索引 2 位置
   if (_observeInstances.perfObservers[2]) {
     (0, _log.logMetric)(_metrics.lcp.value, "lcpFinal");
     (0, _performanceObserver.poDisconnect)(2);
   }
   // 处理 CLS 观察器：获取最终记录并记录最终值
+  // CLS 观察器在索引 3 位置
   if (_observeInstances.perfObservers[3]) {
     // 如果观察器支持 takeRecords 方法，立即获取所有待处理的记录
+    // 这确保不会丢失任何布局偏移事件
     if (typeof _observeInstances.perfObservers[3].takeRecords === 'function') {
       _observeInstances.perfObservers[3].takeRecords();
     }
@@ -1388,22 +1515,25 @@ var disconnectPerfObserversHidden = exports.disconnectPerfObserversHidden = func
     (0, _performanceObserver.poDisconnect)(3);
   }
   // 处理 TBT 观察器：记录最终值并断开连接
+  // TBT 观察器在索引 4 位置
   if (_observeInstances.perfObservers[4]) {
     (0, _log.logMetric)(_metrics.tbt.value, "tbtFinal");
     (0, _performanceObserver.poDisconnect)(4);
   }
-  // 处理 INP 观察器：记录最终值并断开连接
-  //  if (perfObservers[6]) {
-  //   console.log('🎯 记录最终 INP 值');
-  //   // 获取最终的 INP 统计数据
-  //   const finalINP = getINPValue();
-  //   if (finalINP.value > 0) {
-  //     logMetric(finalINP.value, `inpFinal`, finalINP);
-  //   }
-  //   poDisconnect(6);
-  // }
+  // 处理 INP 观察器：记录最终值并断开连接（已注释）
+  // INP（Interaction to Next Paint）是新的 Core Web Vitals 指标
+  // 用于衡量页面的交互响应性
+  if (_observeInstances.perfObservers[6]) {
+    console.log('�� 记录最终 INP 值');
+    // 获取最终的 INP 统计数据
+    var finalINP = getINPValue();
+    if (finalINP.value > 0) {
+      (0, _log.logMetric)(finalINP.value, "inpFinal", finalINP);
+    }
+    (0, _performanceObserver.poDisconnect)(6);
+  }
 };
-},{"../config":"../src/config/index.ts","../data/log":"../src/data/log.ts","../data/metrics":"../src/data/metrics.ts","./onCumulativeLayoutShift":"../src/performance/onCumulativeLayoutShift.ts","./observeInstances":"../src/performance/observeInstances.ts","./performanceObserver":"../src/performance/performanceObserver.ts","./onResourceTiming":"../src/performance/onResourceTiming.ts","./onElementTiming":"../src/performance/onElementTiming.ts","./onFP":"../src/performance/onFP.ts","./onFCP":"../src/performance/onFCP.ts","./onLCP":"../src/performance/onLCP.ts","./onFID":"../src/performance/onFID.ts","./onTTFB":"../src/performance/onTTFB.ts"}],"../src/tools/isSupported.ts":[function(require,module,exports) {
+},{"../config":"../src/config/index.ts","../data/log":"../src/data/log.ts","../data/metrics":"../src/data/metrics.ts","./onCumulativeLayoutShift":"../src/performance/onCumulativeLayoutShift.ts","./observeInstances":"../src/performance/observeInstances.ts","./performanceObserver":"../src/performance/performanceObserver.ts","./onResourceTiming":"../src/performance/onResourceTiming.ts","./onElementTiming":"../src/performance/onElementTiming.ts","./onFP":"../src/performance/onFP.ts","./onFCP":"../src/performance/onFCP.ts","./onLCP":"../src/performance/onLCP.ts","./onFID":"../src/performance/onFID.ts","./onTTFB":"../src/performance/onTTFB.ts","./onINP":"../src/performance/onINP.ts"}],"../src/tools/isSupported.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
