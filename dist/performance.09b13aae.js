@@ -1118,27 +1118,75 @@ var _performanceObserver = require("./performanceObserver");
 var _observeInstances = require("./observeInstances");
 var _totalBlockingTime = require("./totalBlockingTime");
 var _log = require("../data/log");
+/**
+ * 初始化首次绘制监控
+ *
+ * 该函数监控页面的绘制性能，包括：
+ * 1. First Paint (FP) - 首次绘制时间
+ * 2. First Contentful Paint (FCP) - 首次内容绘制时间
+ *
+ * 当 FCP 触发后，会启动长任务监控来计算总阻塞时间（TBT）
+ *
+ * @param performanceEntries - 性能条目数组，包含绘制事件的详细信息
+ */
 var initFirstPaint = exports.initFirstPaint = function initFirstPaint(performanceEntries) {
+  // 遍历所有绘制性能条目
   performanceEntries.forEach(function (entry) {
     if (entry.name === _metrics.fpEntryName) {
+      // 记录首次绘制（FP）时间
+      // FP 表示页面开始渲染的第一个像素点
       (0, _log.logMetric)(entry.startTime, 'fp');
     } else if (entry.name === _metrics.fcpEntryName) {
+      // 记录首次内容绘制（FCP）时间
+      // FCP 表示页面首次显示有意义内容的时间点
       _metrics.fcp.value = entry.startTime;
       (0, _log.logMetric)(_metrics.fcp.value, 'fcp');
+      // FCP 触发后，启动长任务监控
+      // 长任务监控用于计算总阻塞时间（TBT），这是衡量页面交互性能的重要指标
       _observeInstances.perfObservers[4] = (0, _performanceObserver.po)('longtask', _totalBlockingTime.initTotalBlockingTime);
+      // 断开首次绘制观察器，因为 FP 和 FCP 已经获取到，不再需要继续监控
       (0, _performanceObserver.poDisconnect)(0);
     }
   });
 };
+/**
+ * 初始化最大内容绘制监控
+ *
+ * 该函数监控页面的最大内容绘制（LCP）指标，
+ * LCP 是 Core Web Vitals 的重要指标，表示页面主要内容加载完成的时间。
+ *
+ * 注意：LCP 观察器会持续监控，直到页面隐藏或用户交互
+ *
+ * @param performanceEntries - 性能条目数组，包含 LCP 事件的详细信息
+ */
 var initLargestContentfulPaint = exports.initLargestContentfulPaint = function initLargestContentfulPaint(performanceEntries) {
+  // 获取最后一个 LCP 条目
+  // 因为 LCP 可能在页面加载过程中多次更新，我们取最新的值
   var lastEntry = performanceEntries.pop();
   if (lastEntry) {
+    // 使用 renderTime 或 loadTime 作为 LCP 值
+    // renderTime: 元素渲染完成的时间
+    // loadTime: 元素加载完成的时间
     _metrics.lcp.value = lastEntry.renderTime || lastEntry.loadTime;
   }
 };
+/**
+ * 初始化元素时间监控
+ *
+ * 该函数监控页面中特定元素的性能指标，
+ * 需要在 HTML 元素上添加 elementtiming 属性来启用监控。
+ *
+ * 使用场景：监控关键元素的加载和渲染性能
+ *
+ * @param performanceEntries - 性能条目数组，包含元素时间事件的详细信息
+ */
 var initElementTiming = exports.initElementTiming = function initElementTiming(performanceEntries) {
+  // 遍历所有元素时间性能条目
   performanceEntries.forEach(function (entry) {
     if (entry.identifier) {
+      // 记录特定元素的性能指标
+      // identifier 是在 HTML 元素上设置的 elementtiming 属性值
+      // 用于标识和区分不同的监控元素
       (0, _log.logMetric)(entry.startTime, entry.identifier);
     }
   });
@@ -1202,33 +1250,64 @@ var _observeInstances = require("./observeInstances");
 var _paint = require("./paint");
 var _performanceObserver = require("./performanceObserver");
 var _resourceTiming = require("./resourceTiming");
+/**
+ * 初始化性能观察器
+ *
+ * 该函数负责设置各种性能指标的监控，包括：
+ * 1. 绘制相关指标（FP、LCP）
+ * 2. 用户交互指标（FID）
+ * 3. 布局稳定性指标（CLS）
+ * 4. 资源加载性能（可选）
+ * 5. 元素时间指标（可选）
+ *
+ * 每个观察器都被存储在 perfObservers 数组中，便于后续管理和清理
+ */
 var initPerformanceObserver = exports.initPerformanceObserver = function initPerformanceObserver() {
   console.log('⏰ 性能收集开始');
+  // 监控首次绘制（First Paint）- 页面开始渲染的时间点
   _observeInstances.perfObservers[0] = (0, _performanceObserver.po)('paint', _paint.initFirstPaint);
+  // 监控首次输入延迟（First Input Delay）- 用户首次交互的响应时间
   _observeInstances.perfObservers[1] = (0, _performanceObserver.po)('first-input', _firstInput.initFirstInputDelay);
+  // 监控最大内容绘制（Largest Contentful Paint）- 页面主要内容加载完成时间
   _observeInstances.perfObservers[2] = (0, _performanceObserver.po)('largest-contentful-paint', _paint.initLargestContentfulPaint);
-  //收集页面全部资源性能数据
+  // 收集页面全部资源性能数据（可选功能）
   if (_config.config.isResourceTiming) {
     console.log('📚 收集页面性能数据');
     (0, _performanceObserver.po)('resource', _resourceTiming.initResourceTiming);
   }
+  // 监控布局偏移（Layout Shift）- 页面视觉稳定性指标
   _observeInstances.perfObservers[3] = (0, _performanceObserver.po)('layout-shift', _cumulativeLayoutShift.initLayoutShift);
+  // 监控元素时间指标（可选功能）
   if (_config.config.isElementTiming) {
     (0, _performanceObserver.po)('element', _paint.initElementTiming);
   }
 };
+/**
+ * 页面隐藏时断开性能观察器连接
+ *
+ * 当页面变为不可见状态时，该函数会：
+ * 1. 记录最终的 LCP 值并断开观察器
+ * 2. 获取 CLS 观察器的最终记录并记录最终值
+ * 3. 记录最终的 TBT 值并断开观察器
+ *
+ * 这样可以避免在页面不可见时继续收集性能数据，节省资源
+ */
 var disconnectPerfObserversHidden = exports.disconnectPerfObserversHidden = function disconnectPerfObserversHidden() {
+  // 处理 LCP 观察器：记录最终值并断开连接
   if (_observeInstances.perfObservers[2]) {
     (0, _log.logMetric)(_metrics.lcp.value, "lcpFinal");
     (0, _performanceObserver.poDisconnect)(2);
   }
+  // 处理 CLS 观察器：获取最终记录并记录最终值
   if (_observeInstances.perfObservers[3]) {
+    // 如果观察器支持 takeRecords 方法，立即获取所有待处理的记录
     if (typeof _observeInstances.perfObservers[3].takeRecords === 'function') {
       _observeInstances.perfObservers[3].takeRecords();
     }
     (0, _log.logMetric)(_metrics.cls.value, "clsFinal");
     (0, _performanceObserver.poDisconnect)(3);
   }
+  // 处理 TBT 观察器：记录最终值并断开连接
   if (_observeInstances.perfObservers[4]) {
     (0, _log.logMetric)(_metrics.tbt.value, "tbtFinal");
     (0, _performanceObserver.poDisconnect)(4);
@@ -1243,20 +1322,30 @@ Object.defineProperty(exports, "__esModule", {
 exports.isPerformanceSupported = void 0;
 var _constants = require("../data/constants");
 /**
- * True if the browser supports the Navigation Timing API,
- * User Timing API and the PerformanceObserver Interface.
- * In Safari, the User Timing API (performance.mark()) is not available,
- * so the DevTools timeline will not be annotated with marks.
- * Support: developer.mozilla.org/en-US/docs/Web/API/Performance/mark
- * Support: developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver
- * Support: developer.mozilla.org/en-US/docs/Web/API/Performance/getEntriesByType
- */
-/**
- * 检查浏览器是否支持性能API
+ * 检查浏览器是否支持性能监控相关的 API
  *
- * @returns 如果浏览器支持性能API，则返回true；否则返回false
+ * 该函数检查浏览器是否支持以下三个关键的性能 API：
+ * 1. Navigation Timing API - 导航时间 API，用于获取页面加载性能数据
+ * 2. User Timing API - 用户时间 API，用于自定义性能标记和测量
+ * 3. PerformanceObserver Interface - 性能观察器接口，用于异步监控性能事件
+ *
+ * 兼容性说明：
+ * - 在 Safari 浏览器中，User Timing API (performance.mark()) 不可用
+ * - 这会导致 DevTools 时间轴无法显示性能标记
+ * - 但其他性能 API 仍然可以正常使用
+ *
+ * 相关文档：
+ * - Performance.mark(): https://developer.mozilla.org/en-US/docs/Web/API/Performance/mark
+ * - PerformanceObserver: https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver
+ * - Performance.getEntriesByType: https://developer.mozilla.org/en-US/docs/Web/API/Performance/getEntriesByType
+ *
+ * @returns true 表示浏览器支持性能监控 API，false 表示不支持
  */
 var isPerformanceSupported = exports.isPerformanceSupported = function isPerformanceSupported() {
+  // 检查 performance 对象是否存在
+  // 检查 getEntriesByType 方法是否可用（Navigation Timing API）
+  // 检查 now 方法是否可用（高精度时间戳）
+  // 检查 mark 方法是否可用（User Timing API）
   return _constants.WP && !!_constants.WP.getEntriesByType && !!_constants.WP.now && !!_constants.WP.mark;
 };
 },{"../data/constants":"../src/data/constants.ts"}],"../src/error/index.ts":[function(require,module,exports) {
@@ -1363,8 +1452,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = void 0;
 var analyticsTracker = function analyticsTracker(options) {
-  //   console.log(Math.random());
-  //   console.log('-------');
   var metricName = options.metricName,
     eventProperties = options.eventProperties,
     data = options.data,
@@ -1373,7 +1460,7 @@ var analyticsTracker = function analyticsTracker(options) {
   console.log(options);
 };
 var _default = exports.default = analyticsTracker;
-},{}],"../src/data/reportData.ts":[function(require,module,exports) {
+},{}],"../src/data/reportdata.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1515,7 +1602,7 @@ var reportStorageEstimate = exports.reportStorageEstimate = function reportStora
     serviceWorker: (0, _utils.convertToKB)(estimateUsageDetails.serviceWorkerRegistrations) // Service Worker 注册存储使用量
   });
 };
-},{"./log":"../src/data/log.ts","../helpers/utils":"../src/helpers/utils.ts"}],"../src/yideng.ts":[function(require,module,exports) {
+},{"./log":"../src/data/log.ts","../helpers/utils":"../src/helpers/utils.ts"}],"../src/index.ts":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1530,7 +1617,7 @@ var _observe = require("./performance/observe");
 var _isSupported = require("./tools/isSupported");
 var _error = _interopRequireDefault(require("./error"));
 var _analyticsTracker2 = _interopRequireDefault(require("./data/analyticsTracker"));
-var _reportData = _interopRequireDefault(require("./data/reportData"));
+var _reportdata = _interopRequireDefault(require("./data/reportdata"));
 var _onVisibilityChange = require("./helpers/onVisibilityChange");
 var _getNetworkInformation = require("./helpers/getNetworkInformation");
 var _storageEstimate = require("./data/storageEstimate");
@@ -1550,20 +1637,30 @@ function _toPrimitive(t, r) { if ("object" != _typeof(t) || !t) return t; var e 
  * @packageDocumentation
  */
 /**
- * Yideng 性能监控主类
+ * 性能监控主类
  * 负责初始化性能监控、错误跟踪、网络信息收集等功能
+ *
+ * 主要功能模块：
+ * 1. 性能指标监控（FCP、LCP、CLS、FID、TBT等）
+ * 2. 错误捕获和跟踪
+ * 3. 网络信息收集
+ * 4. 存储空间监控
+ * 5. 页面可见性管理
  */
-var Yideng = exports.default = /*#__PURE__*/_createClass(
+var PerformanceMonitorSdk = exports.default = /*#__PURE__*/_createClass(
 /**
  * 构造函数
+ * 初始化性能监控SDK，配置各种监控选项和功能模块
+ *
  * @param options - 配置选项，包含日志URL、错误捕获、性能监控等配置
+ * @throws Error 如果没有传递必需的 logUrl 参数
  */
-function Yideng() {
+function PerformanceMonitorSdk() {
   var options = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  _classCallCheck(this, Yideng);
+  _classCallCheck(this, PerformanceMonitorSdk);
   /** SDK版本号 */
   _defineProperty(this, "v", '1.0.0');
-  /** 数据上报接口实例 */
+  /** 数据上报接口实例，供外部调用数据上报功能 */
   _defineProperty(this, "reportData", void 0);
   // 验证必需参数：日志上报URL
   var logUrl = options.logUrl;
@@ -1571,7 +1668,7 @@ function Yideng() {
     throw new Error("\u7CFB\u7EDF\u76D1\u63A7\u5E73\u53F0".concat(this.v, "\u63D0\u793A\u672A\u4F20\u9012logUrl"));
   }
   // 初始化数据上报实例，用于向后台输送监控数据
-  var insReportData = new _reportData.default({
+  var insReportData = new _reportdata.default({
     logUrl: logUrl
   });
   _config.config.reportData = insReportData;
@@ -1580,50 +1677,56 @@ function Yideng() {
   // 配置数据分析追踪器
   var _analyticsTracker = options.analyticsTracker;
   if (_analyticsTracker) {
-    // 使用用户自定义的分析追踪器
+    // 使用用户自定义的分析追踪器，支持自定义数据分析逻辑
     _config.config.analyticsTracker = _analyticsTracker;
   } else {
-    // 使用默认的分析追踪器
+    // 使用默认的分析追踪器，提供基础的性能数据分析
     _config.config.analyticsTracker = _analyticsTracker2.default;
   }
   // 配置性能监控选项
   _config.config.isResourceTiming = !!options.resourceTiming; // 是否开启资源加载时间监控
   _config.config.isElementTiming = !!options.elementTiming; // 是否开启元素时间监控
-  _config.config.maxTime = options.maxMeasureTime || _config.config.maxTime; // 设置最大测量时间
+  _config.config.maxTime = options.maxMeasureTime || _config.config.maxTime; // 设置最大测量时间，防止异常数据
   // 错误监控配置
   if (options.captureError) {
-    // 开启错误跟踪功能
+    // 开启错误跟踪功能，捕获JavaScript运行时错误
     var errorTtace = new _error.default();
     errorTtace.run();
   }
   // 浏览器兼容性检查：如果不支持性能指标则退出
+  // 这确保了SDK只在支持的浏览器中运行，避免运行时错误
   if (!(0, _isSupported.isPerformanceSupported)()) {
     return;
   }
   // 性能观察器初始化：如果浏览器支持PerformanceObserver则启用
+  // PerformanceObserver是监控性能指标的核心API
   if ('PerformanceObserver' in _constants.W) {
     (0, _observe.initPerformanceObserver)();
   }
   // 页面可见性变化监听初始化
+  // 当页面不可见时，停止性能监控以节省资源
   if (typeof _constants.D.hidden !== 'undefined') {
     // Opera 12.10 和 Firefox 18 及更高版本支持
     _constants.D.addEventListener('visibilitychange', _onVisibilityChange.didVisibilityChange.bind(this, _observe.disconnectPerfObserversHidden));
   }
   // 记录页面导航时间数据（DNS请求、白屏时间等）
+  // 这些数据反映了页面的基础加载性能
   (0, _log.logData)('navigationTiming', (0, _getNavigationTiming.getNavigationTiming)());
-  // 记录用户网络信息（H5+多普勒测速） 
+  // 记录用户网络信息（H5+多普勒测速）
+  // 包括网络类型、下行带宽、RTT等信息
   (0, _log.logData)('networkInformation', (0, _getNetworkInformation.getNetworkInformation)());
   // 管理离线缓存数据：如果浏览器支持存储估算API则启用
+  // 监控应用的存储使用情况，帮助优化离线体验
   if (_constants.WN && _constants.WN.storage && typeof _constants.WN.storage.estimate === 'function') {
     _constants.WN.storage.estimate().then(_storageEstimate.reportStorageEstimate);
   }
 });
-},{"./config":"../src/config/index.ts","./data/constants":"../src/data/constants.ts","./data/log":"../src/data/log.ts","./performance/getNavigationTiming":"../src/performance/getNavigationTiming.ts","./performance/observe":"../src/performance/observe.ts","./tools/isSupported":"../src/tools/isSupported.ts","./error":"../src/error/index.ts","./data/analyticsTracker":"../src/data/analyticsTracker.ts","./data/reportData":"../src/data/reportData.ts","./helpers/onVisibilityChange":"../src/helpers/onVisibilityChange.ts","./helpers/getNetworkInformation":"../src/helpers/getNetworkInformation.ts","./data/storageEstimate":"../src/data/storageEstimate.ts"}],"performance/index.ts":[function(require,module,exports) {
+},{"./config":"../src/config/index.ts","./data/constants":"../src/data/constants.ts","./data/log":"../src/data/log.ts","./performance/getNavigationTiming":"../src/performance/getNavigationTiming.ts","./performance/observe":"../src/performance/observe.ts","./tools/isSupported":"../src/tools/isSupported.ts","./error":"../src/error/index.ts","./data/analyticsTracker":"../src/data/analyticsTracker.ts","./data/reportdata":"../src/data/reportdata.ts","./helpers/onVisibilityChange":"../src/helpers/onVisibilityChange.ts","./helpers/getNetworkInformation":"../src/helpers/getNetworkInformation.ts","./data/storageEstimate":"../src/data/storageEstimate.ts"}],"performance/index.ts":[function(require,module,exports) {
 "use strict";
 
-var _yideng = _interopRequireDefault(require("../../src/yideng"));
+var _index = _interopRequireDefault(require("../../src/index"));
 function _interopRequireDefault(e) { return e && e.__esModule ? e : { default: e }; }
-var sdk = new _yideng.default({
+var sdk = new _index.default({
   elementTiming: true,
   logUrl: 'http://123.com/test'
 });
@@ -1631,7 +1734,7 @@ console.log('🐻', sdk);
 // 模拟一个长任务
 var start = Date.now();
 while (Date.now() - start < 1000) {}
-},{"../../src/yideng":"../src/yideng.ts"}],"../node_modules/.pnpm/parcel-bundler@1.12.5/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"../../src/index":"../src/index.ts"}],"../node_modules/.pnpm/parcel-bundler@1.12.5/node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;

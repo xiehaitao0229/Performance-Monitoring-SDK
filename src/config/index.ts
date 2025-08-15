@@ -1,7 +1,7 @@
 import ReportData from '../data/ReportData';
-import { IYidengConfig, IReportData } from '../typings/types';
+import { IConfig, IReportData } from '../typings/types';
 
-export const config: IYidengConfig = {
+export const config: IConfig = {
   // Metrics
   reportData: new ReportData({ logUrl: 'hole' }),
   isResourceTiming: false,

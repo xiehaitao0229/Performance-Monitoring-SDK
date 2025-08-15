@@ -1,4 +1,4 @@
-export interface IYidengDataConsumption {
+export interface IDataConsumption {
   beacon: number;
   css: number;
   fetch: number;
@@ -8,7 +8,7 @@ export interface IYidengDataConsumption {
   total: number;
   xmlhttprequest: number;
 }
-export interface IYidengNavigationTiming {
+export interface INavigationTiming {
   fetchTime?: number;
   workerTime?: number;
   totalTime?: number;
@@ -29,17 +29,17 @@ export type EffectiveConnectionType =
   | '5g'
   | 'slow-2g'
   | 'lte';
-export interface IYidengNetworkInformation {
+export interface INetworkInformation {
   downlink?: number;
   effectiveType?: EffectiveConnectionType;
   onchange?: () => void;
   rtt?: number;
   saveData?: boolean;
 }
-export type IYidengData =
+export type IPerformanceMonitorData =
   | number
-  | IYidengNavigationTiming
-  | IYidengNetworkInformation;
+  | INavigationTiming
+  | INetworkInformation;
 
 export interface INavigatorInfo {
   deviceMemory?: number;
@@ -52,12 +52,12 @@ export type IVitalsScore = 'good' | 'needsImprovement' | 'poor' | null;
 
 export interface IAnalyticsTrackerOptions {
   metricName: string;
-  data: IYidengData;
+  data: IPerformanceMonitorData;
   eventProperties: object;
   navigatorInformation: INavigatorInfo;
   vitalsScore: IVitalsScore;
 }
-export interface IYidengOptions {
+export interface IOptions {
   // Metrics
   captureError?: boolean;
   resourceTiming?: boolean;
@@ -71,7 +71,7 @@ export interface IYidengOptions {
 export interface IReportData {
   sendToAnalytics(level: AskPriority, body: string): void;
 }
-/**
+/**IPerformanceMonitorSdkOptions
  * @param isResourceTiming - 是否开启资源数据
  * @param isElementTiming - 是否开启性能数据
  * @param analyticsTracker - 最大请求时间
@@ -80,7 +80,7 @@ export interface IReportData {
  * @interface 系统配置接口
  * @public
  */
-export interface IYidengConfig {
+export interface IConfig {
   reportData: IReportData;
   isResourceTiming: boolean;
   isElementTiming: boolean;

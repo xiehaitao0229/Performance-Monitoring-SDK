@@ -1,6 +1,6 @@
 import { WP } from '../data/constants';
 import { isPerformanceSupported } from '../helpers/isSupported';
-import { IYidengNavigationTiming } from '../typings/types';
+import { INavigationTiming } from '../typings/types';
 
 /**
  * 获取页面导航时间性能指标
@@ -14,7 +14,7 @@ import { IYidengNavigationTiming } from '../typings/types';
  * 
  * @returns 包含各种导航时间指标的对象，如果浏览器不支持则返回空对象
  */
-export const getNavigationTiming = (): IYidengNavigationTiming => {
+export const getNavigationTiming = (): INavigationTiming => {
   // 检查浏览器是否支持性能监控 API
   if (!isPerformanceSupported()) {
     return {};

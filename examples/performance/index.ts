@@ -1,4 +1,4 @@
-import PerformanceSdk from '../../src/yideng';
+import PerformanceSdk from '../../src/index';
 
 const sdk = new PerformanceSdk({
   elementTiming: true,

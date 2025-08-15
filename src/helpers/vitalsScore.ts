@@ -1,4 +1,4 @@
-import { IYidengData, IVitalsScore } from '../typings/types';
+import { IPerformanceMonitorData, IVitalsScore } from '../typings/types';
 
 // Web Vitals 评分标准阈值定义
 // 参考标准：https://web.dev/vitals/
@@ -58,7 +58,7 @@ export const webVitalsScore: Record<string, number[]> = {
  */
 export const getVitalsScore = (
   measureName: string,
-  value: IYidengData
+  value: IPerformanceMonitorData
 ): IVitalsScore => {
   // 检查指标名称是否在评分标准中存在
   if (!webVitalsScore[measureName]) {
@@ -69,11 +69,11 @@ export const getVitalsScore = (
   const thresholds = webVitalsScore[measureName];
   
   // 根据数值与阈值的比较确定评分等级
-  if (value <= thresholds[0]) {
+  if (value as number <= thresholds[0]) {
     // 数值小于等于第一个阈值，评为优秀
     return 'good';
   }
   
   // 数值小于等于第二个阈值，评为需要改进，否则评为较差
-  return value <= thresholds[1] ? 'needsImprovement' : 'poor';
+  return value as number <= thresholds[1] ? 'needsImprovement' : 'poor';
 };

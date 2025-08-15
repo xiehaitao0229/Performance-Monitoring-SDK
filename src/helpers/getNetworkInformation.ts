@@ -1,7 +1,7 @@
 import { WN } from '../data/constants';
 import {
   EffectiveConnectionType,
-  IYidengNetworkInformation,
+  INetworkInformation,
 } from '../typings/types';
 
 /**
@@ -26,7 +26,7 @@ export let sd = false;
  * 
  * @returns 网络信息对象，包含下行带宽、连接类型、RTT等信息
  */
-export const getNetworkInformation = (): IYidengNetworkInformation => {
+export const getNetworkInformation = (): INetworkInformation => {
   // 检查浏览器是否支持 Network Information API
   if ('connection' in WN) {
     // 获取网络连接对象

@@ -1,4 +1,4 @@
-import { IMetricMap, IYidengDataConsumption } from '../typings/types';
+import { IMetricMap, IDataConsumption } from '../typings/types';
 
 /**
  * 性能指标存储映射表
@@ -49,7 +49,7 @@ export const fcpEntryName = 'first-contentful-paint';
  * 资源时间消耗统计对象
  * 用于跟踪不同类型资源的加载时间消耗
  */
-export const rt: { value: IYidengDataConsumption } = {
+export const rt: { value: IDataConsumption } = {
   value: {
     beacon: 0,           // 信标请求消耗的时间
     css: 0,              // CSS 资源加载消耗的时间
