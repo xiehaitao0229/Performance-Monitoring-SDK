@@ -1,12 +1,12 @@
 import { IPerformanceEntry } from '../typings/types';
-import { fcp, fcpEntryName, lcp } from '../data/metrics';
+import { fcp, fcpEntryName,fpEntryName, lcp } from '../data/metrics';
 import { po, poDisconnect } from './performanceObserver';
 import { perfObservers } from './observeInstances';
 import { initTotalBlockingTime } from './totalBlockingTime';
 import { logMetric } from '../data/log';
 export const initFirstPaint = (performanceEntries: IPerformanceEntry[]) => {
   performanceEntries.forEach((entry) => {
-    if (entry.name === 'first-paint') {
+    if (entry.name === fpEntryName) {
       logMetric(entry.startTime, 'fp');
     } else if (entry.name === fcpEntryName) {
       fcp.value = entry.startTime;

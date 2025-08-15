@@ -9,6 +9,12 @@ import { W, WP } from '../data/constants';
  * Support: developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver
  * Support: developer.mozilla.org/en-US/docs/Web/API/Performance/getEntriesByType
  */
+
+/**
+ * 检查浏览器是否支持性能API
+ *
+ * @returns 如果浏览器支持性能API，则返回true；否则返回false
+ */
 export const isPerformanceSupported = (): boolean => {
   return WP && !!WP.getEntriesByType && !!WP.now && !!WP.mark;
 };

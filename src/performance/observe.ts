@@ -12,7 +12,7 @@ import {
 import { po, poDisconnect } from './performanceObserver';
 import { initResourceTiming } from './resourceTiming';
 export const initPerformanceObserver = (): void => {
-  console.log('⏰ 性能收集开始', Math.random());
+  console.log('⏰ 性能收集开始');
   perfObservers[0] = po('paint', initFirstPaint);
   perfObservers[1] = po('first-input', initFirstInputDelay);
   perfObservers[2] = po('largest-contentful-paint', initLargestContentfulPaint);
