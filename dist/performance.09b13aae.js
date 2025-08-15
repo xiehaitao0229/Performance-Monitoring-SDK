@@ -1432,100 +1432,60 @@ var _onTTFB = require("./onTTFB");
 var _onINP = require("./onINP");
 /**
  * 初始化性能观察器
- *
- * 该函数负责设置各种性能指标的监控，包括：
- * 1. 绘制相关指标（FP、FCP、LCP）
- * 2. 用户交互指标（FID）
- * 3. 布局稳定性指标（CLS）
- * 4. 资源加载性能（可选）
- * 5. 元素时间指标（可选）
- * 6. 网络性能指标（TTFB）
- *
- * 每个观察器都被存储在 perfObservers 数组中，便于后续管理和清理
- * 观察器索引说明：
- * - perfObservers[0]: FP 观察器
- * - perfObservers[1]: FCP 观察器
- * - perfObservers[2]: FID 观察器
- * - perfObservers[3]: LCP 观察器
- * - perfObservers[4]: CLS 观察器
+ * 设置各种性能指标的监控
  */
 var initPerformanceObserver = exports.initPerformanceObserver = function initPerformanceObserver() {
   console.log('⏰ 性能收集开始');
-  // 立即计算并记录 TTFB（首字节时间）
-  // TTFB 不需要观察器，直接使用 Navigation Timing API 计算
-  // 这是衡量服务器响应速度的重要指标
+  // 计算 TTFB（首字节时间）
   (0, _onTTFB.onTTFB)();
-  // 监控首次绘制（First Paint）- 页面开始渲染的时间点
-  // FP 表示页面开始渲染的第一个像素点，是页面渲染的起点
+  // 监控首次绘制（FP）
   _observeInstances.perfObservers[0] = (0, _performanceObserver.po)('paint', _onFP.onFP);
-  // 监控首次内容绘制（First Contentful Paint）- 页面首次显示有意义内容的时间点
-  // FCP 表示页面首次显示有意义内容，是用户体验的重要指标
+  // 监控首次内容绘制（FCP）
   _observeInstances.perfObservers[1] = (0, _performanceObserver.po)('paint', _onFCP.onFCP);
-  // 监控首次输入延迟（First Input Delay）- 用户首次交互的响应时间
-  // FID 衡量页面响应性，值越小表示页面越流畅
+  // 监控首次输入延迟（FID）
   _observeInstances.perfObservers[2] = (0, _performanceObserver.po)('first-input', _onFID.onFID);
-  // 监控最大内容绘制（Largest Contentful Paint）- 页面主要内容加载完成时间
-  // LCP 是 Core Web Vitals 的核心指标，表示页面主要内容可见的时间
+  // 监控最大内容绘制（LCP）
   _observeInstances.perfObservers[3] = (0, _performanceObserver.po)('largest-contentful-paint', _onLCP.onLCP);
-  // 收集页面全部资源性能数据（可选功能）
-  // 监控各种资源（JS、CSS、图片等）的加载性能
+  // 监控资源加载性能（可选）
   if (_config.config.isResourceTiming) {
     console.log('�� 收集页面性能数据');
     (0, _performanceObserver.po)('resource', _onResourceTiming.onResourceTiming);
   }
-  // 监控布局偏移（Layout Shift）- 页面视觉稳定性指标
-  // CLS 衡量页面布局的稳定性，值越小表示页面越稳定
+  // 监控布局偏移（CLS）
   _observeInstances.perfObservers[4] = (0, _performanceObserver.po)('layout-shift', _onCumulativeLayoutShift.onLayoutShift);
-  // 监控元素时间指标（可选功能）
-  // 需要在 HTML 元素上添加 elementtiming 属性来启用监控
+  // 监控元素时间指标（可选）
   if (_config.config.isElementTiming) {
     (0, _performanceObserver.po)('element', _onElementTiming.onElementTiming);
   }
-  // 监控交互到下一次绘制（Interaction to Next Paint）- 页面交互响应性指标
+  // 监控交互响应性（INP）
   _observeInstances.perfObservers[6] = (0, _performanceObserver.po)('event', _onINP.onINP);
 };
 /**
  * 页面隐藏时断开性能观察器连接
- *
- * 当页面变为不可见状态时，该函数会：
- * 1. 记录最终的 LCP 值并断开观察器
- * 2. 获取 CLS 观察器的最终记录并记录最终值
- * 3. 记录最终的 TBT 值并断开观察器
- * 4. 记录最终的 INP 值并断开观察器（已注释）
- *
- * 这样可以避免在页面不可见时继续收集性能数据，节省资源
- * 同时确保获取到完整的性能数据记录
+ * 记录最终值并清理资源
  */
 var disconnectPerfObserversHidden = exports.disconnectPerfObserversHidden = function disconnectPerfObserversHidden() {
-  // 处理 LCP 观察器：记录最终值并断开连接
-  // LCP 观察器在索引 2 位置
+  // 记录最终 LCP 值并断开连接
   if (_observeInstances.perfObservers[2]) {
     (0, _log.logMetric)(_metrics.lcp.value, "lcpFinal");
     (0, _performanceObserver.poDisconnect)(2);
   }
-  // 处理 CLS 观察器：获取最终记录并记录最终值
-  // CLS 观察器在索引 3 位置
+  // 记录最终 CLS 值并断开连接
   if (_observeInstances.perfObservers[3]) {
-    // 如果观察器支持 takeRecords 方法，立即获取所有待处理的记录
-    // 这确保不会丢失任何布局偏移事件
     if (typeof _observeInstances.perfObservers[3].takeRecords === 'function') {
       _observeInstances.perfObservers[3].takeRecords();
     }
     (0, _log.logMetric)(_metrics.cls.value, "clsFinal");
     (0, _performanceObserver.poDisconnect)(3);
   }
-  // 处理 TBT 观察器：记录最终值并断开连接
-  // TBT 观察器在索引 4 位置
+  // 记录最终 TBT 值并断开连接
   if (_observeInstances.perfObservers[4]) {
     (0, _log.logMetric)(_metrics.tbt.value, "tbtFinal");
     (0, _performanceObserver.poDisconnect)(4);
   }
-  // 处理 INP 观察器：记录最终值并断开连接（已注释）
-  // INP（Interaction to Next Paint）是新的 Core Web Vitals 指标
-  // 用于衡量页面的交互响应性
+  // 记录最终 INP 值并断开连接
   if (_observeInstances.perfObservers[6]) {
-    console.log('�� 记录最终 INP 值');
-    // 获取最终的 INP 统计数据
+    console.log('🎯 记录最终 INP 值');
     var finalINP = getINPValue();
     if (finalINP.value > 0) {
       (0, _log.logMetric)(finalINP.value, "inpFinal", finalINP);
