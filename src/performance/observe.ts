@@ -10,6 +10,7 @@ import { onFP } from './onFP';
 import { onFCP} from './onFCP';
 import { onLCP } from './onLCP';
 import { onFID } from './onFID';
+import { onTTFB } from './onTTFB';
 
 
 /**
@@ -26,6 +27,10 @@ import { onFID } from './onFID';
  */
 export const initPerformanceObserver = (): void => {
   console.log('⏰ 性能收集开始');
+
+  // 立即计算并记录 TTFB（首字节时间）
+  // TTFB 不需要观察器，直接使用 Navigation Timing API 计算
+  onTTFB();
 
   // 监控首次绘制（First Paint）- 页面开始渲染的时间点
   perfObservers[0] = po('paint', onFP);
