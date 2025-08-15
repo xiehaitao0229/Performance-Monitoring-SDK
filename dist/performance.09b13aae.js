@@ -1392,6 +1392,16 @@ var disconnectPerfObserversHidden = exports.disconnectPerfObserversHidden = func
     (0, _log.logMetric)(_metrics.tbt.value, "tbtFinal");
     (0, _performanceObserver.poDisconnect)(4);
   }
+  // 处理 INP 观察器：记录最终值并断开连接
+  //  if (perfObservers[6]) {
+  //   console.log('🎯 记录最终 INP 值');
+  //   // 获取最终的 INP 统计数据
+  //   const finalINP = getINPValue();
+  //   if (finalINP.value > 0) {
+  //     logMetric(finalINP.value, `inpFinal`, finalINP);
+  //   }
+  //   poDisconnect(6);
+  // }
 };
 },{"../config":"../src/config/index.ts","../data/log":"../src/data/log.ts","../data/metrics":"../src/data/metrics.ts","./onCumulativeLayoutShift":"../src/performance/onCumulativeLayoutShift.ts","./observeInstances":"../src/performance/observeInstances.ts","./performanceObserver":"../src/performance/performanceObserver.ts","./onResourceTiming":"../src/performance/onResourceTiming.ts","./onElementTiming":"../src/performance/onElementTiming.ts","./onFP":"../src/performance/onFP.ts","./onFCP":"../src/performance/onFCP.ts","./onLCP":"../src/performance/onLCP.ts","./onFID":"../src/performance/onFID.ts","./onTTFB":"../src/performance/onTTFB.ts"}],"../src/tools/isSupported.ts":[function(require,module,exports) {
 "use strict";

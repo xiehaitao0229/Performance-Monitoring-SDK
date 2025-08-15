@@ -7,10 +7,11 @@ import { po, poDisconnect } from './performanceObserver';
 import { onResourceTiming } from './onResourceTiming';
 import { onElementTiming } from './onElementTiming';
 import { onFP } from './onFP';
-import { onFCP} from './onFCP';
+import { onFCP } from './onFCP';
 import { onLCP } from './onLCP';
 import { onFID } from './onFID';
 import { onTTFB } from './onTTFB';
+import { onINP,getINPValue } from './onINP';
 
 
 /**
@@ -89,4 +90,15 @@ export const disconnectPerfObserversHidden = (): void => {
     logMetric(tbt.value, `tbtFinal`);
     poDisconnect(4);
   }
+
+   // 处理 INP 观察器：记录最终值并断开连接
+  //  if (perfObservers[6]) {
+  //   console.log('🎯 记录最终 INP 值');
+  //   // 获取最终的 INP 统计数据
+  //   const finalINP = getINPValue();
+  //   if (finalINP.value > 0) {
+  //     logMetric(finalINP.value, `inpFinal`, finalINP);
+  //   }
+  //   poDisconnect(6);
+  // }
 };

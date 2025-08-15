@@ -101,7 +101,8 @@ export type IPerformanceObserverType =
   | 'navigation'
   | 'paint'
   | 'element'
-  | 'resource';
+  | 'resource'
+  | 'event';
 //性能指标具体请求类型
 export type IPerformanceEntryInitiatorType =
   | 'beacon'
@@ -123,13 +124,14 @@ export declare interface IPerformanceEntry {
   hadRecentInput?: boolean;
   value?: number;
   identifier?: string;
+  interactionId?: number;
 }
 //度量指标数据
 export interface IMetricMap {
   [measureName: string]: boolean;
 }
 // https://wicg.github.io/event-timing/#sec-performance-event-timing
-export interface PerformanceEventTiming extends PerformanceEntry {
+export interface PerformanceEventTiming extends IPerformanceEntry {
   processingStart: DOMHighResTimeStamp;
   target?: Node;
 }
